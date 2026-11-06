@@ -14,7 +14,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image (colcon build + colcon test)
         run: docker build -t pointcloud-latency-lab .
-      - name: Run the pipeline for 15 s
+      - name: Run the pipeline until the last node reports
+        # 起動の速さはマシンによって違うので、決まった秒数ではなく、最後の段(cluster)の集計が
+        # ログに出るまで最大 60 秒待つ。成功でも失敗でも、ログの最後を表示する(原因を追えるように)。
         run: |
-          timeout -s INT 15 docker run --rm pointcloud-latency-lab | tee run.log || true
-          grep -q "\[cluster\]: frames=" run.log
+          docker run -d --rm --name pcl pointcloud-latency-lab
+          ok=0
+          for i in $(seq 60); do
+            if docker logs pcl 2>&1 | grep -q "\[cluster\]: frames="; then ok=1; break; fi
+            if [ "$(docker inspect -f '{{.State.Running}}' pcl)" != "true" ]; then echo "container exited"; break; fi
+            sleep 1
+          done
+          echo "waited ${i} s, ok=${ok}"
+          docker logs pcl 2>&1 | tail -40
+          docker stop pcl > /dev/null || true
+          test "$ok" = 1
