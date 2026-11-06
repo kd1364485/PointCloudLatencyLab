@@ -3,3 +3,5 @@ install/
 log/
 # 各実験の起動ログ(ノードの起動メッセージだけ。分析は CSV と *_summary.txt を使う)
 results/**/launch.log
+# Python のキャッシュ(launch_testing を動かすとできる)
+__pycache__/
