@@ -1,0 +1,226 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.29kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ros:jazzy-ros-base
+#2 DONE 2.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 76B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 3.50kB done
+#4 DONE 0.0s
+
+#5 [1/7] FROM docker.io/library/ros:jazzy-ros-base@sha256:8eed0a4669bbf43ee331878a4c39bd8ebddea8e3312a58b4fae8edb14526b617
+#5 resolve docker.io/library/ros:jazzy-ros-base@sha256:8eed0a4669bbf43ee331878a4c39bd8ebddea8e3312a58b4fae8edb14526b617 0.0s done
+#5 DONE 0.0s
+
+#6 [2/7] RUN apt-get update  && apt-get install -y --no-install-recommends ros-jazzy-rmw-cyclonedds-cpp  && rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [3/7] WORKDIR /ws
+#7 CACHED
+
+#8 [4/7] COPY src/ src/
+#8 DONE 0.0s
+
+#9 [5/7] RUN apt-get update  && rosdep install --from-paths src --ignore-src -y --skip-keys rviz2  && rm -rf /var/lib/apt/lists/*
+#9 1.307 Get:1 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]
+#9 1.307 Get:2 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+#9 1.379 Get:3 http://packages.ros.org/ros2/ubuntu noble InRelease [4679 B]
+#9 1.587 Get:4 http://packages.ros.org/ros2/ubuntu noble/main Sources [2238 kB]
+#9 2.698 Get:5 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1553 kB]
+#9 2.900 Get:6 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+#9 3.346 Get:7 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+#9 3.934 Get:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages [19.3 MB]
+#9 4.856 Get:9 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2132 kB]
+#9 32.94 Ign:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+#9 33.40 Ign:9 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages
+#9 33.41 Ign:4 http://packages.ros.org/ros2/ubuntu noble/main Sources
+#9 33.48 Get:10 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages [117 kB]
+#9 33.75 Get:11 http://packages.ros.org/ros2/ubuntu noble/main amd64 Packages [2112 kB]
+#9 33.96 Get:12 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [55.6 kB]
+#9 34.41 Get:13 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [331 kB]
+#9 34.59 Get:14 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1425 kB]
+#9 34.94 Get:15 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages [1808 kB]
+#9 35.72 Get:16 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [61.8 kB]
+#9 35.72 Get:17 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2240 kB]
+#9 36.12 Get:9 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2132 kB]
+#9 36.12 Get:18 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2173 kB]
+#9 36.54 Get:19 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1743 kB]
+#9 36.91 Get:20 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [669 B]
+#9 36.91 Get:21 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [36.0 kB]
+#9 36.91 Get:22 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [49.0 kB]
+#9 36.92 Get:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages [19.3 MB]
+#9 41.56 Get:4 http://packages.ros.org/ros2/ubuntu noble/main Sources [2238 kB]
+#9 42.58 Fetched 34.3 MB in 44s (773 kB/s)
+#9 42.58 Reading package lists...
+#9 43.77 #All required rosdeps installed successfully
+#9 DONE 43.8s
+
+#10 [6/7] RUN source /opt/ros/jazzy/setup.bash  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release  && colcon test --event-handlers console_cohesion+  && colcon test-result --verbose
+#10 1.262 Starting >>> m0_hello
+#10 1.275 Starting >>> pcl_pipeline
+#10 18.66 Finished <<< m0_hello [19.7s]
+#10 21.12 Finished <<< pcl_pipeline [22.2s]
+#10 21.15 
+#10 21.15 Summary: 2 packages finished [22.4s]
+#10 21.53 Starting >>> m0_hello
+#10 21.53 Starting >>> pcl_pipeline
+#10 21.57 Finished <<< m0_hello [0.04s]
+#10 26.25 --- output: pcl_pipeline
+#10 26.25 UpdateCTestConfiguration  from :/ws/build/pcl_pipeline/CTestConfiguration.ini
+#10 26.25 Parse Config file:/ws/build/pcl_pipeline/CTestConfiguration.ini
+#10 26.25    Site: buildkitsandbox
+#10 26.25    Build name: (empty)
+#10 26.25  Add coverage exclude regular expressions.
+#10 26.25 Create new tag: 20261106-0103 - Experimental
+#10 26.25 UpdateCTestConfiguration  from :/ws/build/pcl_pipeline/CTestConfiguration.ini
+#10 26.25 Parse Config file:/ws/build/pcl_pipeline/CTestConfiguration.ini
+#10 26.25 Test project /ws/build/pcl_pipeline
+#10 26.25 Constructing a list of tests
+#10 26.25 Done constructing a list of tests
+#10 26.25 Updating test list for fixtures
+#10 26.25 Added 0 tests to meet fixture requirements
+#10 26.25 Checking test dependency graph...
+#10 26.25 Checking test dependency graph end
+#10 26.25 test 1
+#10 26.25     Start 1: test_filters
+#10 26.25 
+#10 26.25 1: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_filters.gtest.xml" "--package-name" "pcl_pipeline" "--output-file" "/ws/build/pcl_pipeline/ament_cmake_gtest/test_filters.txt" "--command" "/ws/build/pcl_pipeline/test_filters" "--gtest_output=xml:/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_filters.gtest.xml"
+#10 26.25 1: Working Directory: /ws/build/pcl_pipeline
+#10 26.25 1: Test timeout computed to be: 60
+#10 26.25 1: -- run_test.py: invoking following command in '/ws/build/pcl_pipeline':
+#10 26.25 1:  - /ws/build/pcl_pipeline/test_filters --gtest_output=xml:/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_filters.gtest.xml
+#10 26.25 1: Running main() from /opt/ros/jazzy/src/gtest_vendor/src/gtest_main.cc
+#10 26.25 1: [==========] Running 7 tests from 5 test suites.
+#10 26.25 1: [----------] Global test environment set-up.
+#10 26.25 1: [----------] 1 test from CropBox
+#10 26.25 1: [ RUN      ] CropBox.KeepsInsideAndRemovesEgo
+#10 26.25 1: [       OK ] CropBox.KeepsInsideAndRemovesEgo (0 ms)
+#10 26.25 1: [----------] 1 test from CropBox (0 ms total)
+#10 26.25 1: 
+#10 26.25 1: [----------] 2 tests from VoxelDownsample
+#10 26.25 1: [ RUN      ] VoxelDownsample.OnePointPerVoxelAtCentroid
+#10 26.25 1: [       OK ] VoxelDownsample.OnePointPerVoxelAtCentroid (0 ms)
+#10 26.25 1: [ RUN      ] VoxelDownsample.NegativeCoordinatesUseFloor
+#10 26.25 1: [       OK ] VoxelDownsample.NegativeCoordinatesUseFloor (0 ms)
+#10 26.25 1: [----------] 2 tests from VoxelDownsample (0 ms total)
+#10 26.25 1: 
+#10 26.25 1: [----------] 1 test from RemoveGround
+#10 26.25 1: [ RUN      ] RemoveGround.RemovesPlaneKeepsObstacle
+#10 26.25 1: [       OK ] RemoveGround.RemovesPlaneKeepsObstacle (0 ms)
+#10 26.25 1: [----------] 1 test from RemoveGround (0 ms total)
+#10 26.25 1: 
+#10 26.25 1: [----------] 2 tests from EuclideanCluster
+#10 26.25 1: [ RUN      ] EuclideanCluster.SeparatesTwoBlobsAndDropsSmallOnes
+#10 26.25 1: [       OK ] EuclideanCluster.SeparatesTwoBlobsAndDropsSmallOnes (0 ms)
+#10 26.25 1: [ RUN      ] EuclideanCluster.MaxPointsFiltersHugeCluster
+#10 26.25 1: [       OK ] EuclideanCluster.MaxPointsFiltersHugeCluster (0 ms)
+#10 26.25 1: [----------] 2 tests from EuclideanCluster (0 ms total)
+#10 26.25 1: 
+#10 26.25 1: [----------] 1 test from SimulateScan
+#10 26.25 1: [ RUN      ] SimulateScan.GroundAndCarsAreHit
+#10 26.25 1: [       OK ] SimulateScan.GroundAndCarsAreHit (0 ms)
+#10 26.25 1: [----------] 1 test from SimulateScan (0 ms total)
+#10 26.25 1: 
+#10 26.25 1: [----------] Global test environment tear-down
+#10 26.25 1: [==========] 7 tests from 5 test suites ran. (0 ms total)
+#10 26.25 1: [  PASSED  ] 7 tests.
+#10 26.25 1: -- run_test.py: return code 0
+#10 26.25 1: -- run_test.py: inject classname prefix into gtest result file '/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_filters.gtest.xml'
+#10 26.25 1: -- run_test.py: verify result file '/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_filters.gtest.xml'
+#10 26.25 1/2 Test #1: test_filters .....................   Passed    0.06 sec
+#10 26.25 test 2
+#10 26.25     Start 2: test_test_pipeline_launch.py
+#10 26.25 
+#10 26.25 2: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_test_pipeline_launch.py.xunit.xml" "--package-name" "pcl_pipeline" "--output-file" "/ws/build/pcl_pipeline/launch_test/test_test_pipeline_launch.py.txt" "--command" "/usr/bin/python3" "-m" "launch_testing.launch_test" "/ws/src/pcl_pipeline/test/test_pipeline_launch.py" "--junit-xml=/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_test_pipeline_launch.py.xunit.xml" "--package-name=pcl_pipeline"
+#10 26.25 2: Working Directory: /ws/build/pcl_pipeline
+#10 26.25 2: Test timeout computed to be: 60
+#10 26.25 2: -- run_test.py: invoking following command in '/ws/build/pcl_pipeline':
+#10 26.25 2:  - /usr/bin/python3 -m launch_testing.launch_test /ws/src/pcl_pipeline/test/test_pipeline_launch.py --junit-xml=/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_test_pipeline_launch.py.xunit.xml --package-name=pcl_pipeline
+#10 26.25 2: [INFO] [launch]: All log files can be found below /root/.ros/log/2026-11-06-01-03-00-737923-buildkitsandbox-448
+#10 26.25 2: [INFO] [launch]: Default logging verbosity is set to INFO
+#10 26.25 2: test_markers_arrive_with_plausible_count (pcl_pipeline.TestPipelineOutput.test_markers_arrive_with_plausible_count) ... [INFO] [component_container-1]: process started with pid [466]
+#10 26.25 2: [component_container-1] [INFO] [1793926981.441975410] [pipeline_container]: Load Library: /ws/install/pcl_pipeline/lib/libpipeline_components.so
+#10 26.25 2: [component_container-1] [INFO] [1793926981.443484673] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.443530884] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::CropBox>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.443534217] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::GroundRemoval>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.443537011] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::SensorSim>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.443539528] [pipeline_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::SensorSim>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.447555743] [sensor_sim]: rings=32 azimuth_steps=1800 rate=10.0 Hz cars=8
+#10 26.25 2: [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/sensor_sim' in container '/pipeline_container'
+#10 26.25 2: [component_container-1] [INFO] [1793926981.449434942] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.449484310] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::CropBox>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.449488309] [pipeline_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::CropBox>
+#10 26.25 2: [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/crop_box' in container '/pipeline_container'
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453632511] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453659652] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::CropBox>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453663179] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::GroundRemoval>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453666047] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::SensorSim>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453668909] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::Sink>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453671140] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::VoxelDownsample>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.453673780] [pipeline_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::VoxelDownsample>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.455529590] [voxel_downsample]: voxel on CPU
+#10 26.25 2: [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/voxel_downsample' in container '/pipeline_container'
+#10 26.25 2: [component_container-1] [INFO] [1793926981.457034296] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.457054266] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::CropBox>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.457057700] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::GroundRemoval>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.457060402] [pipeline_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::GroundRemoval>
+#10 26.25 2: [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/ground_removal' in container '/pipeline_container'
+#10 26.25 2: [component_container-1] [INFO] [1793926981.460692031] [pipeline_container]: Found class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [component_container-1] [INFO] [1793926981.460716919] [pipeline_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<pcl_pipeline::ClusterNode>
+#10 26.25 2: [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/cluster' in container '/pipeline_container'
+#10 26.25 2: ok
+#10 26.25 2: 
+#10 26.25 2: ----------------------------------------------------------------------
+#10 26.25 2: Ran 1 test in 2.475s
+#10 26.25 2: 
+#10 26.25 2: OK
+#10 26.25 2: [INFO] [component_container-1]: sending signal 'SIGINT' to process[component_container-1]
+#10 26.25 2: [component_container-1] [INFO] [1793926984.882103521] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+#10 26.25 2: [INFO] [component_container-1]: process has finished cleanly [pid 466]
+#10 26.25 2: test_exit_codes (pcl_pipeline.TestShutdown.test_exit_codes) ... ok
+#10 26.25 2: 
+#10 26.25 2: ----------------------------------------------------------------------
+#10 26.25 2: Ran 1 test in 0.000s
+#10 26.25 2: 
+#10 26.25 2: OK
+#10 26.25 2: -- run_test.py: return code 0
+#10 26.25 2: -- run_test.py: verify result file '/ws/build/pcl_pipeline/test_results/pcl_pipeline/test_test_pipeline_launch.py.xunit.xml'
+#10 26.25 2/2 Test #2: test_test_pipeline_launch.py .....   Passed    4.60 sec
+#10 26.25 
+#10 26.25 100% tests passed, 0 tests failed out of 2
+#10 26.25 
+#10 26.25 Label Time Summary:
+#10 26.25 gtest          =   0.06 sec*proc (1 test)
+#10 26.25 launch_test    =   4.60 sec*proc (1 test)
+#10 26.25 
+#10 26.25 Total Test time (real) =   4.67 sec
+#10 26.25 ---
+#10 26.25 Finished <<< pcl_pipeline [4.72s]
+#10 26.25 
+#10 26.25 Summary: 2 packages finished [4.90s]
+#10 26.45 Summary: 11 tests, 0 errors, 0 failures, 0 skipped
+#10 DONE 26.5s
+
+#11 [7/7] COPY docker/entrypoint.sh /entrypoint.sh
+#11 DONE 0.1s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 1.1s done
+#12 exporting manifest sha256:16172cc1f0f2f7e0b7988d2d42130f53cecc01ff82ce8f87ea13f802f2be99be 0.0s done
+#12 exporting config sha256:b8791ae81494e6ea973bd1f1e84731f5b44e634e730f4aa91c97955951e76808 0.0s done
+#12 exporting attestation manifest sha256:a9163763eaed639a647507e8e211e07f63f056712062cfd7c3002ae706685a60
+#12 exporting attestation manifest sha256:a9163763eaed639a647507e8e211e07f63f056712062cfd7c3002ae706685a60 0.1s done
+#12 exporting manifest list sha256:196933be4976a1b49e15ae12d45c61b7c7cc558555ad0f4408036aacd664db2d 0.1s done
+#12 naming to docker.io/library/pointcloud-latency-lab:latest
+#12 naming to docker.io/library/pointcloud-latency-lab:latest 0.0s done
+#12 unpacking to docker.io/library/pointcloud-latency-lab:latest
+#12 unpacking to docker.io/library/pointcloud-latency-lab:latest 7.5s done
+#12 DONE 9.1s

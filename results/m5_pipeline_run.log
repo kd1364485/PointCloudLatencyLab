@@ -1,0 +1,18 @@
+round=1 rings=32 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=1 rings=32 dev=cuda gpu: P5=3%(753MHz) P8=88%(224MHz) P0=7%(1702MHz)   voxel: voxel on GPU
+round=1 rings=64 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=1 rings=64 dev=cuda gpu: P5=3%(446MHz) P8=87%(216MHz) P0=9%(1702MHz)   voxel: voxel on GPU
+round=1 rings=128 dev=cpu gpu: P8=100%(219MHz)   voxel: voxel on CPU
+round=1 rings=128 dev=cuda gpu: P5=1%(435MHz) P8=87%(221MHz) P0=10%(1702MHz)   voxel: voxel on GPU
+round=2 rings=32 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=2 rings=32 dev=cuda gpu: P5=1%(352MHz) P8=87%(214MHz) P0=11%(1702MHz)   voxel: voxel on GPU
+round=2 rings=64 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=2 rings=64 dev=cuda gpu: P5=2%(427MHz) P8=85%(216MHz) P0=12%(1702MHz)   voxel: voxel on GPU
+round=2 rings=128 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=2 rings=128 dev=cuda gpu: P5=2%(812MHz) P8=88%(222MHz) P0=8%(1702MHz)   voxel: voxel on GPU
+round=3 rings=32 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=3 rings=32 dev=cuda gpu: P5=3%(673MHz) P8=85%(212MHz) P0=11%(1702MHz)   voxel: voxel on GPU
+round=3 rings=64 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=3 rings=64 dev=cuda gpu: P8=90%(217MHz) P0=9%(1702MHz)   voxel: voxel on GPU
+round=3 rings=128 dev=cpu gpu: P8=100%(210MHz)   voxel: voxel on CPU
+round=3 rings=128 dev=cuda gpu: P5=0%(375MHz) P8=87%(216MHz) P0=11%(1702MHz)   voxel: voxel on GPU
