@@ -21,6 +21,11 @@ target_include_directories(pipeline_core PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(pipeline_core PUBLIC cxx_std_17)
 
+# M7: CPU 側のメモリの使い回しの効果を測るベンチマーク(ROS も CUDA も使わない)
+add_executable(alloc_bench src/alloc_bench.cpp)
+target_link_libraries(alloc_bench pipeline_core)
+install(TARGETS alloc_bench DESTINATION lib/${PROJECT_NAME})
+
 # M5: voxel の CUDA 版。CUDA が見つかったときだけ作る(見つからなければ CPU 版だけ)
 include(CheckLanguage)
 check_language(CUDA)

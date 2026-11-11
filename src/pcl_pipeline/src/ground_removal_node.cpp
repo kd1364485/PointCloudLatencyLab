@@ -22,10 +22,10 @@ public:
 private:
   void on_cloud(const PointCloud2 & msg) {
     Stopwatch sw;
-    const auto in = from_msg(msg);
-    const auto out = remove_ground(in, p_.dist, p_.iterations, seq_++);
+    from_msg(msg, in_);  // in_ は使い回す(M7)
+    const auto out = remove_ground(in_, p_.dist, p_.iterations, seq_++);
     auto out_msg = to_msg(out, msg.header);  // header(センサーの時刻)はそのまま引き継ぐ
-    stats_.add(sw.ms(), msg.header.stamp, in.size(), out.size());
+    stats_.add(sw.ms(), msg.header.stamp, in_.size(), out.size());
     pub_->publish(std::move(out_msg));
   }
 
@@ -33,6 +33,7 @@ private:
     float dist;
     int iterations;
   } p_;
+  std::vector<Point> in_;  // 受け取った点群の置き場(同じノードのコールバックは同時に動かない)
   uint32_t seq_ = 0;
   rclcpp::Publisher<PointCloud2>::SharedPtr pub_;
   rclcpp::Subscription<PointCloud2>::SharedPtr sub_;

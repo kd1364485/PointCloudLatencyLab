@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <random>
+#include <tuple>
 #include <vector>
 
 #include "pcl_pipeline/filters.hpp"
@@ -65,6 +67,101 @@ TEST(VoxelDownsample, NegativeCoordinatesUseFloor) {
   // -0.1 と 0.1 は、一辺 1 m なら別のボクセル(floor で -1 と 0)。切り捨て(0 と 0)だと誤って 1 つになる
   const std::vector<Point> in = {{-0.1f, 0, 0, 0}, {0.1f, 0, 0, 0}};
   EXPECT_EQ(voxel_downsample(in, 1.0f).size(), 2u);
+}
+
+// ---- M7: 作業領域(VoxelScratch)を使い回す版 ----
+
+namespace {
+// 点の順番によらない比較用: 点の数と、座標の合計
+struct Summary {
+  size_t n = 0;
+  double sx = 0, sy = 0, sz = 0;
+};
+Summary summarize(const std::vector<Point> & v) {
+  Summary s;
+  s.n = v.size();
+  for (const auto & p : v) {
+    s.sx += p.x;
+    s.sy += p.y;
+    s.sz += p.z;
+  }
+  return s;
+}
+void expect_same(const std::vector<Point> & a, const std::vector<Point> & b) {
+  const auto sa = summarize(a), sb = summarize(b);
+  EXPECT_EQ(sa.n, sb.n);
+  EXPECT_NEAR(sa.sx, sb.sx, 1e-3);
+  EXPECT_NEAR(sa.sy, sb.sy, 1e-3);
+  EXPECT_NEAR(sa.sz, sb.sz, 1e-3);
+}
+}  // namespace
+
+TEST(VoxelDownsampleScratch, ReusingScratchDoesNotLeakStateBetweenCalls) {
+  const auto big = blob(0, 0, 0, 4.f, 3000, 1);     // 原点のまわり、ボクセルが多い
+  const auto small = blob(50, 50, 0, 1.f, 40, 2);   // 遠く離れた別の場所、ボクセルは少ない
+  VoxelScratch scratch;
+  std::vector<Point> out;
+
+  voxel_downsample(big, 0.5f, scratch, out);
+  const auto first = out;
+  voxel_downsample(small, 0.5f, scratch, out);  // 大 → 小: 前の結果が混ざってはいけない
+  const auto second = out;
+  voxel_downsample(big, 0.5f, scratch, out);  // 小 → 大
+  const auto third = out;
+
+  expect_same(first, voxel_downsample(big, 0.5f));
+  expect_same(second, voxel_downsample(small, 0.5f));
+  expect_same(third, first);
+  for (const auto & p : second) EXPECT_GT(p.x, 40.f);  // 原点のまわりの点が残っていない
+}
+
+TEST(VoxelDownsampleScratch, EmptyInputGivesEmptyOutput) {
+  VoxelScratch scratch;
+  std::vector<Point> out = {{1, 2, 3, 4}};  // 前の結果が残っていても、空にする
+  voxel_downsample({}, 0.2f, scratch, out);
+  EXPECT_TRUE(out.empty());
+}
+
+TEST(VoxelDownsampleScratch, EpochWrapAroundStillWorks) {
+  const auto pts = blob(0, 0, 0, 3.f, 500, 3);
+  VoxelScratch scratch;
+  std::vector<Point> out;
+  voxel_downsample(pts, 0.5f, scratch, out);                // 表を作る
+  scratch.epoch = 0xFFFFFFFFu;                              // 次の呼び出しで 1 周して 0 に戻る
+  voxel_downsample(blob(0, 0, 0, 3.f, 500, 4), 0.5f, scratch, out);  // 古い印が残っていても、使われない
+  voxel_downsample(pts, 0.5f, scratch, out);
+  expect_same(out, voxel_downsample(pts, 0.5f));
+}
+
+TEST(VoxelDownsampleScratch, MatchesBruteForceReference) {
+  // 別の作り(std::map)で数えた答えと、全部のボクセルの重心が一致するか
+  const auto pts = blob(1.f, -2.f, 0.5f, 6.f, 4000, 5);
+  const float leaf = 0.4f;
+  struct Acc {
+    double x = 0, y = 0, z = 0;
+    int n = 0;
+  };
+  std::map<std::tuple<int, int, int>, Acc> ref;
+  for (const auto & p : pts) {
+    auto & a = ref[{int(std::floor(p.x / leaf)), int(std::floor(p.y / leaf)),
+                    int(std::floor(p.z / leaf))}];
+    a.x += p.x;
+    a.y += p.y;
+    a.z += p.z;
+    ++a.n;
+  }
+  VoxelScratch scratch;
+  std::vector<Point> out;
+  voxel_downsample(pts, leaf, scratch, out);
+  ASSERT_EQ(out.size(), ref.size());
+  for (const auto & q : out) {
+    const auto it = ref.find({int(std::floor(q.x / leaf)), int(std::floor(q.y / leaf)),
+                              int(std::floor(q.z / leaf))});
+    ASSERT_NE(it, ref.end());
+    EXPECT_NEAR(q.x, it->second.x / it->second.n, 1e-4);
+    EXPECT_NEAR(q.y, it->second.y / it->second.n, 1e-4);
+    EXPECT_NEAR(q.z, it->second.z / it->second.n, 1e-4);
+  }
 }
 
 TEST(RemoveGround, RemovesPlaneKeepsObstacle) {

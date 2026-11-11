@@ -95,28 +95,73 @@ std::vector<Point> crop_box(const std::vector<Point> & in, const Box & keep, con
   return out;
 }
 
-std::vector<Point> voxel_downsample(const std::vector<Point> & in, float leaf) {
-  struct Acc {
-    double x = 0, y = 0, z = 0, i = 0;
-    uint32_t n = 0;
-  };
-  std::unordered_map<uint64_t, Acc> cells;
-  cells.reserve(in.size());
-  for (const auto & pt : in) {
-    auto & a = cells[cell_key(cell_of(pt.x, leaf), cell_of(pt.y, leaf), cell_of(pt.z, leaf))];
-    a.x += pt.x;
-    a.y += pt.y;
-    a.z += pt.z;
-    a.i += pt.intensity;
-    ++a.n;
+void voxel_downsample(const std::vector<Point> & in, float leaf, VoxelScratch & s,
+                      std::vector<Point> & out) {
+  out.clear();
+  if (in.empty()) return;
+
+  // 表の大きさ: 点の数の 2 倍以上の、2 のべき乗(最悪でも、半分は空いている)。
+  // 点の数が少し増減しても、同じ大きさのまま使える(65,536 点までなら、131,072 枠のまま)。
+  size_t want = 16;
+  int bits = 4;
+  while (want < 2 * in.size()) {
+    want <<= 1;
+    ++bits;
   }
-  std::vector<Point> out;
-  out.reserve(cells.size());
-  for (const auto & kv : cells) {
-    const auto & a = kv.second;
+  if (want > s.table.size()) {  // 足りないときだけ、取り直す
+    s.table.assign(want, VoxelScratch::Slot{});
+    s.shift = 64 - bits;
+    s.epoch = 0;
+    s.used.reserve(in.size());
+  }
+  if (++s.epoch == 0) {  // 世代の番号が 1 周した(約 43 億回。10 Hz なら 13 年)ときは、印を消して数え直す
+    for (auto & slot : s.table) slot.stamp = 0;
+    s.epoch = 1;
+  }
+  s.used.clear();
+
+  const size_t mask = s.table.size() - 1;
+  for (const auto & pt : in) {
+    const uint64_t k = cell_key(cell_of(pt.x, leaf), cell_of(pt.y, leaf), cell_of(pt.z, leaf));
+    // 鍵をばらけさせて、表の上位ビットを番号にする。埋まっていれば、隣の枠へ(線形探索)
+    size_t h = static_cast<size_t>((k * 0x9E3779B97F4A7C15ull) >> s.shift);
+    for (;;) {
+      auto & slot = s.table[h];
+      if (slot.stamp != s.epoch) {  // 空き(この世代ではまだ使っていない)
+        slot.stamp = s.epoch;
+        slot.key = k;
+        slot.x = pt.x;
+        slot.y = pt.y;
+        slot.z = pt.z;
+        slot.i = pt.intensity;
+        slot.n = 1;
+        s.used.push_back(static_cast<uint32_t>(h));
+        break;
+      }
+      if (slot.key == k) {  // 同じボクセル
+        slot.x += pt.x;
+        slot.y += pt.y;
+        slot.z += pt.z;
+        slot.i += pt.intensity;
+        ++slot.n;
+        break;
+      }
+      h = (h + 1) & mask;
+    }
+  }
+
+  out.reserve(s.used.size());
+  for (uint32_t h : s.used) {
+    const auto & a = s.table[h];
     out.push_back({static_cast<float>(a.x / a.n), static_cast<float>(a.y / a.n),
                    static_cast<float>(a.z / a.n), static_cast<float>(a.i / a.n)});
   }
+}
+
+std::vector<Point> voxel_downsample(const std::vector<Point> & in, float leaf) {
+  VoxelScratch scratch;
+  std::vector<Point> out;
+  voxel_downsample(in, leaf, scratch, out);
   return out;
 }
 

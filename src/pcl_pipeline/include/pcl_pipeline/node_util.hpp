@@ -45,10 +45,12 @@ inline std::unique_ptr<PointCloud2> to_msg(const std::vector<Point> & pts,
   return msg;
 }
 
-// PointCloud2 → std::vector<Point>。自分のノードが出した形なら memcpy、それ以外は 1 点ずつ読む
-inline std::vector<Point> from_msg(const PointCloud2 & msg) {
+// PointCloud2 → std::vector<Point>。自分のノードが出した形なら memcpy、それ以外は 1 点ずつ読む。
+// pts は使い回してよい(M7)。毎回 vector<Point>(n) を作ると、約 530 KB を確保して 0 で埋めてから、
+// すぐ memcpy で上書きすることになる。大きさが同じ(か小さい)なら、resize は何もしない。
+inline void from_msg(const PointCloud2 & msg, std::vector<Point> & pts) {
   const size_t n = static_cast<size_t>(msg.width) * msg.height;
-  std::vector<Point> pts(n);
+  pts.resize(n);
   const bool same_layout = msg.point_step == sizeof(Point) && msg.fields.size() == 4 &&
                            msg.fields[0].name == "x" && msg.fields[0].offset == 0 &&
                            msg.fields[1].offset == 4 && msg.fields[2].offset == 8 &&
@@ -56,10 +58,16 @@ inline std::vector<Point> from_msg(const PointCloud2 & msg) {
                            msg.row_step == msg.width * msg.point_step;
   if (same_layout) {
     if (n) std::memcpy(pts.data(), msg.data.data(), n * sizeof(Point));
-    return pts;
+    return;
   }
   sensor_msgs::PointCloud2ConstIterator<float> x(msg, "x"), y(msg, "y"), z(msg, "z");
   for (size_t i = 0; i < n; ++i, ++x, ++y, ++z) pts[i] = {*x, *y, *z, 0.f};
+}
+
+// 毎回新しい vector を返す版(使い回さなくてよいとき用)
+inline std::vector<Point> from_msg(const PointCloud2 & msg) {
+  std::vector<Point> pts;
+  from_msg(msg, pts);
   return pts;
 }
 

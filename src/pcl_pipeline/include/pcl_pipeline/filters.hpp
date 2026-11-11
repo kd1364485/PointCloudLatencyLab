@@ -40,7 +40,27 @@ std::vector<Point> simulate_scan(const SimParams & params, const std::vector<Box
 // keep の中にあり、ego(自車の範囲)の外にある点だけ残す
 std::vector<Point> crop_box(const std::vector<Point> & in, const Box & keep, const Box & ego);
 
-// 一辺 leaf の立方体ごとに、中の点を重心 1 点にまとめる
+// ボクセルの間引きの作業領域(M7)。呼び出し側が持ち続けて使い回す。
+// 毎フレーム unordered_map を作って捨てると、1 点ごとの確保と解放が約 1 万回起きる。
+// 先に確保した平らなハッシュ表(開放番地法)を使い回せば、それがなくなる。
+struct VoxelScratch {
+  struct Slot {
+    uint64_t key;
+    double x, y, z, i;  // 合計(float で足すと、点が多いボクセルで誤差が大きくなる)
+    uint32_t n;
+    uint32_t stamp;  // この世代(epoch)で使われた枠か。世代を進めるだけで、表を空にできる
+  };
+  std::vector<Slot> table;     // 大きさは 2 のべき乗
+  std::vector<uint32_t> used;  // この世代で使った枠の番号(出力の順番になる)
+  uint32_t epoch = 0;
+  int shift = 0;  // ハッシュの上位ビットを使うためのずらし量(table の大きさに対応)
+};
+
+// 一辺 leaf の立方体ごとに、中の点を重心 1 点にまとめる。out は使い回してよい(中身は上書き)
+void voxel_downsample(const std::vector<Point> & in, float leaf, VoxelScratch & scratch,
+                      std::vector<Point> & out);
+
+// 作業領域を毎回作る版(テストとベンチマーク用。ノードは上の版を使う)
 std::vector<Point> voxel_downsample(const std::vector<Point> & in, float leaf);
 
 // 平面 a x + b y + c z + d = 0((a, b, c) は単位ベクトル)

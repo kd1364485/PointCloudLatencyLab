@@ -1,0 +1,28 @@
+frames=50, points per frame: 33209 .. 33213, leaf=0.20, iterations=3000
+check: flat table vs unordered_map: OK (voxels 11093 / 11093, max diff 0.0e+00 m)
+== round 1
+ [取り込み] 約 33,000 点(約 530 KB)を vector<Point> に入れる
+  A 今までの形: vector<Point>(n) mean    50.5  p50    47.8  p99   110.7  p99.9   230.9  max    865.8  [us]
+  B 0 で埋めない new Point[n]   mean    15.3  p50    14.2  p99    47.0  p99.9   123.5  max    189.5  [us]
+  C 使い回し: resize + memcpy    mean    21.4  p50    20.3  p99    50.9  p99.9   155.7  max    198.0  [us]
+ [間引き] voxel_downsample(約 33,000 点 → 約 11,000 点)
+  V0 今までの形: 毎回 unordered_map mean  1103.0  p50  1064.7  p99  1750.4  p99.9  2456.8  max   2645.6  [us]
+  V1 unordered_map を使い回す   mean   950.9  p50   912.5  p99  1512.3  p99.9  2008.5  max   2598.9  [us]
+  V2 平らなハッシュ表(毎回作る) mean   907.1  p50   834.4  p99  1689.8  p99.9  2518.7  max   3066.2  [us]
+  V3 平らなハッシュ表を使い回す(今) mean   718.3  p50   678.5  p99  1253.8  p99.9  1726.6  max   3523.9  [us]
+ [1 フレーム分] 取り込み + 間引き
+  今までの形(A + V0)            mean   910.0  p50   889.6  p99  1385.5  p99.9  2214.6  max   4757.3  [us]
+  使い回し(C + V3。今)         mean   585.3  p50   560.6  p99  1008.4  p99.9  1794.0  max   6523.5  [us]
+== round 2
+ [取り込み] 約 33,000 点(約 530 KB)を vector<Point> に入れる
+  A 今までの形: vector<Point>(n) mean    38.3  p50    35.6  p99    96.8  p99.9   293.5  max    368.3  [us]
+  B 0 で埋めない new Point[n]   mean    12.1  p50    11.3  p99    26.7  p99.9    95.1  max    240.3  [us]
+  C 使い回し: resize + memcpy    mean    16.9  p50    15.9  p99    33.5  p99.9   150.2  max    303.9  [us]
+ [間引き] voxel_downsample(約 33,000 点 → 約 11,000 点)
+  V0 今までの形: 毎回 unordered_map mean  1010.0  p50   987.6  p99  1524.9  p99.9  1975.7  max   2044.3  [us]
+  V1 unordered_map を使い回す   mean   886.3  p50   860.9  p99  1301.7  p99.9  1617.5  max   3506.5  [us]
+  V2 平らなハッシュ表(毎回作る) mean   770.7  p50   731.6  p99  1289.3  p99.9  1703.2  max   2993.9  [us]
+  V3 平らなハッシュ表を使い回す(今) mean   605.9  p50   570.2  p99  1018.6  p99.9  1307.5  max   1759.8  [us]
+ [1 フレーム分] 取り込み + 間引き
+  今までの形(A + V0)            mean   905.1  p50   886.3  p99  1319.1  p99.9  1668.2  max   2188.5  [us]
+  使い回し(C + V3。今)         mean   580.5  p50   558.3  p99   910.4  p99.9  1375.1  max   3498.3  [us]

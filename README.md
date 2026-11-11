@@ -23,8 +23,9 @@ sensor_sim ──▶ crop_box ──▶ voxel_downsample ──▶ ground_remova
 | 3 | **1 プロセス + intra-process にすると、取りこぼし 0、受け渡し 4 回の合計 1.4 → 0.06 ms**(点の数を 2 倍にしてもほぼ同じ)。複数スレッドの executor は、一本道のパイプラインでは逆に遅い | [M3](#m320261105-1-プロセスにまとめるcomposable-node--intra-process) |
 | 4 | CPU に負荷をかけると、遅れるのは受け渡しではなく処理そのもの(p99 3 → 19〜23 ms)。**CPU を分ける(taskset)のが一番効く**(p99 5.3〜5.6 ms)。reliable は取りこぼし 0 の代わりに **p99 が約 100 ms** に跳ねる | [M4](#m420261105-cpu-の負荷優先度cpu-の割り当てqos) |
 | 5 | voxel の CUDA 版は、続けて呼ぶと 3.4 万点で 1.3〜1.8 倍、110 万点で約 5.6 倍速い。**しかし 10 Hz のパイプラインの中では CPU より遅い**。仕事の間隔が空くと GPU が休んだ状態(P8、約 215 MHz)のまま仕事をするため(100 ms ごとに呼ぶベンチマークで再現) | [M5](#m520261106-voxel-の-cuda-版) |
+| 6 | CPU 側のメモリの使い回し(1 点ごとに確保しない平らなハッシュ表など)は、**連続で動かす実験では約 40% 速い**のに、**10 Hz の実際の使い方では、静かなときは変わらず**(voxel の処理 1.04 → 1.02 ms)、**負荷をかけて CPU を分けた条件のときだけ約 26% 速い**(2.38 → 1.76 ms)。100 ms ごとに休んで測ると、今までの `unordered_map` のほうが速かった。M5 と同じ「連続で測った速さは、使われ方では出ない」 | [M7](#m720261111-cpu-側のメモリの使い回し) |
 
-**English summary:** A small ROS 2 (C++, Jazzy) point-cloud preprocessing pipeline (crop → voxel downsample → RANSAC ground removal → Euclidean clustering) with per-stage latency logging. Findings, all measured: across processes, ~550 KB clouds lose 20–30% of frames under best_effort because of UDP receive-buffer overflow; RViz2 slows the pipeline because Cyclone DDS switches to multicast for a second reader; composing into one process with intra-process comms removes the loss and cuts hop latency from 1.4 to 0.06 ms; under CPU load, CPU partitioning beats `nice` and a multi-threaded executor; reliable QoS trades loss for ~100 ms p99; a CUDA voxel filter that is 1.3–5.6× faster back-to-back is slower than the CPU at 10 Hz because the GPU stays in a low-power state between frames.
+**English summary:** A small ROS 2 (C++, Jazzy) point-cloud preprocessing pipeline (crop → voxel downsample → RANSAC ground removal → Euclidean clustering) with per-stage latency logging. Findings, all measured: across processes, ~550 KB clouds lose 20–30% of frames under best_effort because of UDP receive-buffer overflow; RViz2 slows the pipeline because Cyclone DDS switches to multicast for a second reader; composing into one process with intra-process comms removes the loss and cuts hop latency from 1.4 to 0.06 ms; under CPU load, CPU partitioning beats `nice` and a multi-threaded executor; reliable QoS trades loss for ~100 ms p99; a CUDA voxel filter that is 1.3–5.6× faster back-to-back is slower than the CPU at 10 Hz because the GPU stays in a low-power state between frames; likewise, reusing CPU-side buffers (a preallocated flat hash table instead of a per-frame `unordered_map`) is ~40% faster in a tight-loop benchmark, but at the real 10 Hz rate it gives no gain on an idle machine and ~26% (voxel stage) only under CPU load, so a back-to-back benchmark overstates the gain.
 
 ## 動かし方
 
@@ -36,6 +37,7 @@ ros2 launch pcl_pipeline composed.launch.py                 # おすすめ: 1 �
 ros2 launch pcl_pipeline pipeline.launch.py                 # 別プロセス + RViz2(rviz:=false で表示なし)
 ros2 launch pcl_pipeline composed.launch.py use_cuda:=true  # voxel を CUDA 版にする
 ./install/pcl_pipeline/lib/pcl_pipeline/voxel_bench 0.2 50 [100]  # voxel の CPU / GPU 比較([] は呼ぶ間隔 ms)
+./install/pcl_pipeline/lib/pcl_pipeline/alloc_bench 150 100       # M7: メモリの使い回しの比較(100 は休む ms。10 Hz と同じ。引数なしは連続)
 colcon test && colcon test-result --verbose                 # テスト
 ```
 
@@ -52,7 +54,7 @@ launch の主な引数: `rings`(点の数)、`rate_hz`、`csv_dir`(1 フレー�
 
 | テスト | 内容 |
 |---|---|
-| `test_filters`(gtest、7 件) | 切り出し・間引き(重心、負の座標の floor)・地面除去(平面の推定)・クラスタリング(分離、点の数の上限)・疑似 LiDAR |
+| `test_filters`(gtest、11 件) | 切り出し・間引き(重心、負の座標の floor)・地面除去(平面の推定)・クラスタリング(分離、点の数の上限)・疑似 LiDAR。M7 で足した 4 件: 作業領域を使い回しても前の結果が混ざらない、空の入力、世代番号が 1 周しても動く、`std::map` で数えた答えと全ボクセルの重心が一致する |
 | `test_voxel_cuda`(gtest、2 件) | CUDA 版が CPU 版と同じ結果か(GPU がなければスキップ。CUDA なしのビルドでは作らない) |
 | `test_pipeline_launch.py`(launch_testing) | パイプライン全体を起動し、15 秒以内に箱が 20 フレーム届くこと、箱の数が 4〜14(車は 8 台)であること |
 
@@ -66,6 +68,7 @@ src/pcl_pipeline/
   src/filters.cpp, voxel_cuda.cu     処理の本体(CPU / CUDA)
   src/*_node.cpp                     ノード(部品として登録。単独の実行ファイルにもなる)
   src/voxel_bench.cpp                voxel の CPU / GPU のベンチマーク
+  src/alloc_bench.cpp                CPU 側のメモリの使い回しのベンチマーク(M7)
   launch/                            pipeline.launch.py(別プロセス)、composed.launch.py(1 プロセス)
   test/                              gtest、launch_testing
 src/m0_hello/                        M0 の環境確認用の最小の pub / sub
@@ -86,6 +89,8 @@ WSL2 は native の Ubuntu ではないので、遅延の揺れ(p99・最大)は
 - GPU のクロックを固定して、M5 の原因を確定させる(Windows の管理者権限が要る)。
 - native の Ubuntu での測定(WSL2 との違い)。
 - 既定の Fast DDS で、別プロセスのノードがつながらなかった原因(M0)。
+- 平らなハッシュ表が、100 ms ごとの実行で遅くなる理由(M7。表を小さくしても変わらなかった)。
+- 切り出しの出力、地面除去、メッセージを作る側(`to_msg`)のメモリの使い回し(M7 では、測ったものだけを入れた)。
 
 ---
 
@@ -344,3 +349,75 @@ RViz2 で表示しながら(同じ設定):
   - GPU のクロックを固定する(`nvidia-smi --lock-gpu-clocks`。Windows の管理者権限が要る PC の設定変更なので、本人の判断)。効けば、休んだ状態が原因だと確定できる。
   - 合間に GPU を起こしておく(空の仕事を流し続ける)。電力を無駄に使う。
   - 送る時間を減らす: pinned memory(ページロックされたメモリ)、crop_box も GPU で行い、点群を GPU に置いたまま次の段へ渡す。
+
+## M7(2026/11/11): CPU 側のメモリの使い回し
+
+### きっかけ
+
+コードを読み直していて気づいた: GPU 側のメモリ(`VoxelCuda`)は先に確保して使い回しているのに、CPU 側のノードは、毎フレーム `std::vector` や `unordered_map` を作って捨てている(`from_msg` の `vector<Point>(n)`、`voxel_downsample` のハッシュ表)。「使い回せば、遅延の揺れが減るか」を調べた。
+
+### 実験 1: 連続で動かす(`alloc_bench`、3,000 回 × 2 回。`results/m7/alloc_bench_*.txt`)
+
+点群は 50 個(ノイズが違うので、点の数も毎回少し違う: 33,209〜33,213)。結果は、作り方を変えても同じ(ボクセル 11,093 個、重心の差 0)。
+
+| 処理 | 作り方 | p50 | p99 |
+|---|---|---|---|
+| 取り込み(`from_msg`、約 530 KB) | A 今までの形: `vector<Point>(n)` + `memcpy` | 36〜48 µs | 97〜111 µs |
+| | B 0 で埋めない `new Point[n]` | 11〜14 µs | 27〜47 µs |
+| | C 使い回し: `resize` + `memcpy` | 16〜20 µs | 34〜51 µs |
+| 間引き(33,000 → 11,000 点) | V0 今までの形: 毎回 `unordered_map` を作る | 890〜1,060 µs | 1,200〜1,750 µs |
+| | V1 `unordered_map` を使い回す | 780〜910 µs | 1,220〜1,510 µs |
+| | V2 平らなハッシュ表(毎回作る) | 730〜830 µs | 1,290〜1,690 µs |
+| | **V3 平らなハッシュ表を使い回す** | **510〜680 µs**(約 40% 減) | 820〜1,250 µs |
+
+- 取り込みの時間のほとんどは、確保ではなく、`vector<Point>(n)` が**全部を 0 で埋めてから、すぐ `memcpy` で上書きする**無駄だった。
+- `unordered_map` を使い回すだけ(V1)では、あまり縮まない。`clear()` が、1 万個の入れ物を毎回捨てるため。効いたのは、**1 点ごとに確保しない作り**(開放番地法の平らな表)にしたこと。
+
+### 入れたこと
+
+- `VoxelScratch`(`filters.hpp`): 平らなハッシュ表。表は 2 のべき乗の大きさで、足りないときだけ取り直す。中身は、「世代番号」を進めるだけで空にできる(1 周したときは印を消す)。結果は、ボクセルに入った順番に出る(以前は `unordered_map` の内部の順番)。
+- `from_msg(msg, pts)`(`node_util.hpp`): 使い回す `vector` に入れる版。
+- 4 つのノードが、受け取った点群の置き場を持つ。`voxel_downsample` ノードは、出力の置き場と作業領域も持つ(同じノードのコールバックは同時に動かない)。
+- テスト 4 件(`test_filters`)。全体で 18 件。
+- 測った処理(取り込みと間引き)だけを変えた。切り出しや地面除去の出力などは、そのまま。
+
+### 実験 2: 実際のパイプラインで測る(入れる前 / 入れた後を交互に 6 回ずつ。`results/m7_summary.txt`)
+
+入れる前の版は、M7 の前のコミット(`d33a0a8`)を別の場所に作った(`git archive d33a0a8`)。片方を先に全部やると、PC の状態の違いが混ざるので、**交互に**動かした。1 プロセス + intra-process、各 30 秒、voxel の処理の p50 / 端から端の p50・p99(約 1,450 フレーム):
+
+| 条件 | voxel の処理 p50 | voxel の処理 p99 | 端から端 p50 | 端から端 p99 |
+|---|---|---|---|---|
+| 負荷なし: 入れる前 | 1.043 ms | 1.65 ms | 1.96 ms | 3.00 ms |
+| 負荷なし: 入れた後 | 1.021 ms(**ほぼ同じ**。6 回中 4 回で低い) | 1.73 ms | 1.93 ms | 3.51 ms(1 回だけ 4.59 の回があった。ほかは同じ) |
+| 負荷あり + CPU を分けた(`taskset`): 入れる前 | 2.381 ms | 3.46 ms | 4.37 ms | 6.72 ms |
+| 負荷あり + CPU を分けた: 入れた後 | **1.763 ms(約 26% 減。6 回すべてで低い)** | 2.47 ms(約 29% 減) | **3.72 ms(約 15% 減)** | 5.39 ms(約 20% 減) |
+
+- 静かなときは、ほかの段(切り出し 0.171 → 0.169、地面除去 0.307 → 0.311、クラスタリング 0.294 → 0.291 ms)も、変わらない。取り込みで減るのは約 20 µs で、見えない。
+- 負荷があるときは、voxel と、切り出し(0.330 → 0.299 ms、約 9% 減)が速くなった。
+
+実験 1 の約 40% 減は、静かなパイプラインでは出ていない。
+
+### 実験 3: 100 ms ごとに休んで測る(`alloc_bench 150 100`)
+
+仮説: 実験 1 は、同じ処理を何千回も続けるので、CPU とキャッシュが温まっている。パイプラインは 100 ms に 1 回だけ動くので、冷えている。条件ごとに別々に、毎回 100 ms 休んでから測った(2 回):
+
+| | 連続 | **100 ms ごとに休む** |
+|---|---|---|
+| V0 今までの形(`unordered_map`) | 890〜1,060 µs | **914〜1,008 µs**(ほとんど変わらない) |
+| V1 `unordered_map` を使い回す | 780〜890 µs | 1,225〜1,251 µs(遅くなる) |
+| V3 平らなハッシュ表を使い回す | 510〜610 µs | **1,031〜1,168 µs**(約 2 倍遅くなり、V0 より約 12% 遅い) |
+| V4 表を小さくした試作(前回のボクセル数から決める。約 1.5 MB) | 540〜590 µs | 996〜1,131 µs(あまり変わらない) |
+
+今までの形は、休んでも速さが変わらない。平らな表は、休むと約 2 倍遅くなって、利点が消える。表を小さくしても(V4)ほとんど変わらないので、**原因は表の大きさだけではない**。
+
+### わかったこと
+
+1. **連続で測った速さは、実際の使われ方では出ない。** M5 の GPU(連続では速いが、10 Hz ではクロックが落ちて遅い)と同じ種類の落とし穴。改善の効果は、**実際の間隔・実際の負荷**で測らないと、決められない。
+2. 入れた変更は、静かなときは**害も得もない**(誤差の範囲)。負荷があるときは、**約 26% 速く**なる(6 回すべてで)。取り込みの 0 埋めをなくすのは、確実に無駄が減るので残した。
+3. 遅延の**揺れ**(p99 ÷ p50)は、メモリの使い回しでは減らない(実験 1 でも、速くなったぶん、一定のばらつきが相対的に目立つだけ)。揺れを抑えたのは、M4 の CPU の割り当て(`taskset`)だった。
+
+### わかっていないこと
+
+- 平らな表が、休んだあとに遅くなる理由。仮説: ハッシュで散らばった場所を触るので、冷えたキャッシュでは 1 回ごとに主記憶まで取りに行く。`unordered_map` の入れ物は、点を受け取った順(LiDAR の走査順 = 空間的に近い順)に確保されるので、近い場所に並ぶ。**未確認**(表を小さくしても変わらなかったので、これだけでは説明できない)。
+- 負荷があるときだけ効く理由。
+- 点群の場所を保つハッシュ(Morton 順など)にすれば、冷えた状態でも速いかもしれない。試していない。

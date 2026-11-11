@@ -1,0 +1,7 @@
+frames=50, points per frame: 33209 .. 33213, leaf=0.20, iterations=150
+check: flat table vs unordered_map: OK (voxels 11093 / 11093, max diff 0.0e+00 m)
+== 間引き 1 つずつ、毎回 100 ms 休んでから測る
+  V0 今までの形: 毎回 unordered_map mean  1186.8  p50  1008.3  p99  2689.2  p99.9  3464.1  max   3464.1  [us]
+  V1 unordered_map を使い回す   mean  1350.8  p50  1251.4  p99  2427.4  p99.9  2436.5  max   2436.5  [us]
+  V3 平らなハッシュ表を使い回す(今) mean  1280.1  p50  1168.2  p99  2324.4  p99.9  2433.9  max   2433.9  [us]
+  V4 表を小さく(前回のボクセル数から) mean  1229.1  p50  1131.1  p99  2674.0  p99.9  3153.1  max   3153.1  [us]

@@ -30,8 +30,8 @@ public:
 private:
   void on_cloud(const PointCloud2 & msg) {
     Stopwatch sw;
-    const auto in = from_msg(msg);
-    const auto clusters = euclidean_cluster(in, tolerance_, min_points_, max_points_);
+    from_msg(msg, in_);  // in_ は使い回す(M7)
+    const auto clusters = euclidean_cluster(in_, tolerance_, min_points_, max_points_);
 
     auto out = std::make_unique<MarkerArray>();
     Marker clear;
@@ -60,10 +60,11 @@ private:
       m.color.a = 0.4f;
       out->markers.push_back(m);
     }
-    stats_.add(sw.ms(), msg.header.stamp, in.size(), clusters.size());
+    stats_.add(sw.ms(), msg.header.stamp, in_.size(), clusters.size());
     pub_->publish(std::move(out));
   }
 
+  std::vector<Point> in_;  // 受け取った点群の置き場(同じノードのコールバックは同時に動かない)
   float tolerance_;
   int min_points_, max_points_;
   rclcpp::Publisher<MarkerArray>::SharedPtr pub_;

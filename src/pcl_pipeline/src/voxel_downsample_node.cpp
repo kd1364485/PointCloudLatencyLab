@@ -37,10 +37,10 @@ public:
 private:
   void on_cloud(const PointCloud2 & msg) {
     Stopwatch sw;
-    const auto in = from_msg(msg);
-    const auto out = run(in);
-    auto out_msg = to_msg(out, msg.header);  // header(センサーの時刻)はそのまま引き継ぐ
-    stats_.add(sw.ms(), msg.header.stamp, in.size(), out.size());
+    from_msg(msg, in_);  // in_・out_・scratch_ は使い回す(M7)
+    run();
+    auto out_msg = to_msg(out_, msg.header);  // header(センサーの時刻)はそのまま引き継ぐ
+    stats_.add(sw.ms(), msg.header.stamp, in_.size(), out_.size());
     pub_->publish(std::move(out_msg));
   }
 
@@ -51,16 +51,22 @@ private:
     return false;
 #endif
   }
-  std::vector<Point> run(const std::vector<Point> & in) {
+  // in_ を間引いて、out_ に入れる
+  void run() {
 #ifdef PCL_PIPELINE_WITH_CUDA
-    if (cuda_) return cuda_->run(in, p_.leaf);
+    if (cuda_) {
+      out_ = cuda_->run(in_, p_.leaf);
+      return;
+    }
 #endif
-    return voxel_downsample(in, p_.leaf);
+    voxel_downsample(in_, p_.leaf, scratch_, out_);
   }
 
   struct Params {
     float leaf;
   } p_;
+  std::vector<Point> in_, out_;  // 毎フレーム確保し直さない(同じノードのコールバックは同時に動かない)
+  VoxelScratch scratch_;
 #ifdef PCL_PIPELINE_WITH_CUDA
   std::unique_ptr<VoxelCuda> cuda_;
 #endif
